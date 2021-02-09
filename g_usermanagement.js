@@ -75,7 +75,7 @@ class userManager {
     }
     return JSON.stringify(returnObj);
   }
-  // Del user
+  // Del user (This is taging user as removed)
   userDel(userName) {
     let returnObj = {};
     const timestamp = new Date().toJSON();
