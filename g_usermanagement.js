@@ -14,8 +14,8 @@ class user {
     this.userId = userId;
     this.userName = userName;
     this.password = password;
-    this.data = {};
-    this.settings = {};
+    this.data = {};    // Attribary user information, not a setting like shoesize
+    this.settings = {};  
     this.lastLogin;
     this.deleted;
   }
@@ -27,11 +27,14 @@ class userManager {
     this.userIdMax = db.get("userIdMax").value();
     this.usersLoggedIn = [];
   }
+  
   userLogin(username, password) {
     const user = db.get("users").find({ userName: username }).value();
     let returnObj = {};
     if (user && bcrypt.compareSync(password, user.password)) {
       returnObj = Object.assign({}, user);
+      //user.lastLogin = new Date().toISOString();
+      //db.write();
       returnObj.password = "******";
     } else {
       returnObj.error = "Wrong user or password";
@@ -123,7 +126,7 @@ class userManager {
   }
 
   // Update user data
-  userSettingsUpdate(userName, dataToUpdate) {
+  userDataUpdate(userName, dataToUpdate) {
     const orginal = JSON.parse(
       db.get("users").filter({ userName: userName }).value()
     );
