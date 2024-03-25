@@ -21,6 +21,14 @@ class user {
   }
 }
 */
+function isJSON(variable) {
+  try {
+    JSON.parse(variable);
+  } catch (error) {
+    return false;
+  }
+  return true;
+}
 
 class userManager {
   constructor() {
@@ -51,6 +59,7 @@ class userManager {
       returnObj.error += 'No username defined';
     }
     if (!password) {
+      returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
       returnObj.error += 'No password defined';
     }
     // Check that username is not taken.
@@ -82,16 +91,11 @@ class userManager {
   userDel(userName) {
     let returnObj = {};
     const timestamp = new Date().toJSON();
-    const user = db
-      .get("users")
-      .find({ userName: userName })
-      .set({ deleted: timestamp });
-    if (user.lenght > 0) {
-      if ((user.lenght = 1)) {
-        returnObj = user[0];
-      } else {
-        returnObj = user;
-      }
+    const user = db.get('users').find({ userName: userName }).set({ deleted: timestamp }).value();
+    if (user) {
+      returnObj = user;
+      returnObj.password = '******';
+      db.write();
     } else {
       returnObj.error = 'No such user';
     }
@@ -100,13 +104,10 @@ class userManager {
   // Wipe user
   userWipe(userName) {
     let returnObj = {};
-    const user = db.get("users").remove({ userName: userName }).write();
-    if (user.lenght > 0) {
-      if ((user.lenght = 1)) {
-        returnObj = user[0];
-      } else {
+    const user = db.get('users').remove({ userName: userName }).write();
+    if (user) {
         returnObj = user;
-      }
+        returnObj.password = '******';
     } else {
       returnObj.error = 'No such user';
     }
@@ -115,24 +116,27 @@ class userManager {
 
   // Update user settings
   userSettingsUpdate(userName, settingsToUpdate) {
-    const orginal = JSON.parse(
-      db.get("users").filter({ userName: userName }).value()
-    );
+    const originalUserFilter = db.get('users').filter({ userName: userName }).value();
+    if (originalUserFilter.length !== 1) return { error: 'more or less than one user with that username found.' };
+    if (typeof settingsToUpdate === 'object' && !Array.isArray(settingsToUpdate) && settingsToUpdate !== null) settingsToUpdate = JSON.stringify(settingsToUpdate);
+    const orginal = originalUserFilter[0].settings ? originalUserFilter[0].settings : {};
     const updates = JSON.parse(settingsToUpdate);
     const newSettings = Object.assign(orginal, updates);
-    db.get("users")
-      .filter({ userName: userName })
-      .set({ settings: newSettings });
+    db.get('users').filter({ userName: userName }).set({ settings: newSettings }).write();
+    return newSettings;
   }
 
   // Update user data
   userDataUpdate(userName, dataToUpdate) {
-    const orginal = JSON.parse(
-      db.get("users").filter({ userName: userName }).value()
-    );
+    const originalUserFilter = db.get('users').filter({ userName: userName }).value();
+    if (originalUserFilter.length !== 1) return { error: 'more or less than one user with that username found.' };
+    if (typeof dataToUpdate === 'object' && !Array.isArray(dataToUpdate) && dataToUpdate !== null) dataToUpdate = JSON.stringify(dataToUpdate);
+
+    const orginal = originalUserFilter[0].data ? originalUserFilter[0].data : {};
     const updates = JSON.parse(dataToUpdate);
     const newData = Object.assign(orginal, updates);
-    db.get("users").find({ userName: userName }).set({ data: newData });
+    db.get('users').find({ userName: userName }).set({ data: newData }).write();
+    return newData;
   }
 }
 
