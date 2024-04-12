@@ -26,6 +26,14 @@ class userManager {
   constructor() {
     this.userIdMax = db.get("userIdMax").value();
     this.usersLoggedIn = [];
+    // How many tries before temporary lock the account.
+    this.userLockTries = 5;
+    // if wrong password attempted within this period counter towards lock get +1.
+    this.userLockTriesTime = 300;
+    // How long the user will be unable to login.
+    // Each attempt before this time will reset the timer. (Call me evil ;) )
+    // this is the suggested formula. You can change it but it's quite balanced.
+    this.userLockTimeSec = this.userLockTries * this.userLockTriesTime;
   }
 
   // Check if a username exist
@@ -38,13 +46,23 @@ class userManager {
   userLogin(username, password) {
     const user = db.get("users").find({ userName: username }).value();
     let returnObj = {};
-    if (user && bcrypt.compareSync(password, user.password)) {
+    // if login attempt while account is locked.
+    if(user.userLockTries >= user.lastLoginFail && (new Date() - new Date(user.lastLoginFailTime))/1000 <= this.userLockTimeSec) {
+      // "reset" timer
+      user.lastLoginFailTime = new Date().toISOString();
+      returnObj.error = 'To many failed attempt, take a break';
+    }
+    else if (user && bcrypt.compareSync(password, user.password)) {
       returnObj = Object.assign({}, user);
-      //user.lastLogin = new Date().toISOString();
-      //db.write();
-      returnObj.password = "******";
+      // Store last successful login, some day we might purge unused users.
+      user.lastLoginTime = new Date().toISOString();
+      db.write();
+      returnObj.password = '******';
     } else {
-      returnObj.error = "Wrong user or password";
+      user.lastLoginFailTime = new Date().toISOString();
+      // if failed login within userLockTriesTime sec, add one to userLockTriesTime
+      if ((new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTriesTime) user.userLockTriesTime = user.lastLoginFail ? user.lastLoginFail++ : 1;
+      returnObj.error = 'Wrong user or password';
     }
     return JSON.stringify(returnObj);
     // someway to check if something returned.
