@@ -61,7 +61,7 @@ class userManager {
     // If any errors found, return them.
     if (!returnObj.error) {
       const userId = this.userIdMax++;
-      const passwordHashed = bcrypt.hashSync(password, 11);
+      const passwordHashed = bcrypt.hashSync(password, bcryptSaltRounds);
       const dataObj = data ? JSON.parse(data) : {};
       const settingsObj = data ? JSON.parse(c) : {};
       db.set("userIdMax", this.userIdMax).write();
