@@ -1,4 +1,4 @@
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const bcryptSaltRounds = 11;
 const low = require("lowdb");
 const FileSync = require("lowdb/adapters/FileSync");
