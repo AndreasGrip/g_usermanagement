@@ -1,9 +1,9 @@
-const bcrypt = require("bcryptjs");
-const bcryptSaltRounds = 11;
-const low = require("lowdb");
-const FileSync = require("lowdb/adapters/FileSync");
+const bcrypt = require('bcryptjs');
+const bcryptSaltRounds = 24;
+const low = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
 
-const adapter = new FileSync("userDb.json");
+const adapter = new FileSync('userDb.json');
 const db = low(adapter);
 
 db.defaults({ users: [], userIdMax: 0 }).write();
@@ -14,7 +14,7 @@ class user {
     this.userId = userId;
     this.userName = userName;
     this.password = password;
-    this.data = {};    // Attribary user information, not a setting like shoesize
+    this.data = {};    // Arbitrary user information, not a setting like shoe size
     this.settings = {};  
     this.lastLogin;
     this.deleted;
@@ -24,7 +24,7 @@ class user {
 
 class userManager {
   constructor() {
-    this.userIdMax = db.get("userIdMax").value();
+    this.userIdMax = db.get('userIdMax').value();
     this.usersLoggedIn = [];
     // How many tries before temporary lock the account.
     this.userLockTries = 5;
@@ -42,9 +42,9 @@ class userManager {
     if(user) return true;
     return false;
   }
-  
+
   userLogin(username, password) {
-    const user = db.get("users").find({ userName: username }).value();
+    const user = db.get('users').find({ userName: username }).value();
     let returnObj = {};
     // if login attempt while account is locked.
     if(user.userLockTries >= user.lastLoginFail && (new Date() - new Date(user.lastLoginFailTime))/1000 <= this.userLockTimeSec) {
@@ -72,16 +72,16 @@ class userManager {
     let returnObj = {};
     // Check that username is set
     if (!userName) {
-      returnObj.error = returnObj.error ? returnObj.error + " and " : "";
-      returnObj.error += "No username defined";
+      returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
+      returnObj.error += 'No username defined';
     }
     if (!password) {
-      returnObj.error += "No password defined";
+      returnObj.error += 'No password defined';
     }
     // Check that username is not taken.
-    if (db.get("users").find({ userName: userName }).value()) {
-      returnObj.error = returnObj.error ? returnObj.error + " and " : "";
-      returnObj.error += "Username already exist";
+    if (db.get('users').find({ userName: userName }).value()) {
+      returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
+      returnObj.error += 'Username already exist';
     }
     // If any errors found, return them.
     if (!returnObj.error) {
@@ -89,7 +89,7 @@ class userManager {
       const passwordHashed = bcrypt.hashSync(password, bcryptSaltRounds);
       const dataObj = data ? JSON.parse(data) : {};
       const settingsObj = data ? JSON.parse(c) : {};
-      db.set("userIdMax", this.userIdMax).write();
+      db.set('userIdMax', this.userIdMax).write();
       const userObj = {
         userId: userId,
         userName: userName,
@@ -97,67 +97,58 @@ class userManager {
         data: dataObj,
         settings: settingsObj,
       };
-      db.get("users").push(userObj).write();
+      db.get('users').push(userObj).write();
       returnObj = Object.assign({}, userObj);
-      returnObj.password = "******";
+      returnObj.password = '******';
     }
     return JSON.stringify(returnObj);
   }
-  // Del user (This is taging user as removed)
+  // Del user (This is tagging user as removed)
   userDel(userName) {
     let returnObj = {};
     const timestamp = new Date().toJSON();
-    const user = db
-      .get("users")
-      .find({ userName: userName })
-      .set({ deleted: timestamp });
-    if (user.lenght > 0) {
-      if ((user.lenght = 1)) {
+    const user = db.get('users').find({ userName: userName }).set({ deleted: timestamp });
+    if (user.length > 0) {
+      if ((user.length = 1)) {
         returnObj = user[0];
       } else {
         returnObj = user;
       }
     } else {
-      returnObj.error = "No such user";
+      returnObj.error = 'No such user';
     }
     return JSON.stringify(returnObj);
   }
   // Wipe user
   userWipe(userName) {
     let returnObj = {};
-    const user = db.get("users").remove({ userName: userName }).write();
-    if (user.lenght > 0) {
-      if ((user.lenght = 1)) {
+    const user = db.get('users').remove({ userName: userName }).write();
+    if (user.length > 0) {
+      if ((user.length = 1)) {
         returnObj = user[0];
       } else {
         returnObj = user;
       }
     } else {
-      returnObj.error = "No such user";
+      returnObj.error = 'No such user';
     }
     return JSON.stringify(returnObj);
   }
 
   // Update user settings
   userSettingsUpdate(userName, settingsToUpdate) {
-    const orginal = JSON.parse(
-      db.get("users").filter({ userName: userName }).value()
-    );
+    const original = JSON.parse(db.get('users').filter({ userName: userName }).value());
     const updates = JSON.parse(settingsToUpdate);
-    const newSettings = Object.assign(orginal, updates);
-    db.get("users")
-      .filter({ userName: userName })
-      .set({ settings: newSettings });
+    const newSettings = Object.assign(original, updates);
+    db.get('users').filter({ userName: userName }).set({ settings: newSettings });
   }
 
   // Update user data
   userDataUpdate(userName, dataToUpdate) {
-    const orginal = JSON.parse(
-      db.get("users").filter({ userName: userName }).value()
-    );
+    const original = JSON.parse(db.get('users').filter({ userName: userName }).value());
     const updates = JSON.parse(dataToUpdate);
-    const newData = Object.assign(orginal, updates);
-    db.get("users").find({ userName: userName }).set({ data: newData });
+    const newData = Object.assign(original, updates);
+    db.get('users').find({ userName: userName }).set({ data: newData });
   }
 }
 
