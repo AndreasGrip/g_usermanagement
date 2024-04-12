@@ -27,6 +27,13 @@ class userManager {
     this.userIdMax = db.get("userIdMax").value();
     this.usersLoggedIn = [];
   }
+
+  // Check if a username exist
+  userCheck(username) {
+    const user = db.get("users").find({ userName: username }).value();
+    if(user) return true;
+    return false;
+  }
   
   userLogin(username, password) {
     const user = db.get("users").find({ userName: username }).value();
