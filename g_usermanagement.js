@@ -36,10 +36,15 @@ class userManager {
     this.userLockTimeSec = this.userLockTries * this.userLockTriesTime;
   }
 
+  // return number of users in the database.
+  userCount() {
+    return db.get('users').__wrapped__.users.length;
+  }
+
   // Check if a username exist
   userCheck(username) {
-    const user = db.get("users").find({ userName: username }).value();
-    if(user) return true;
+    const user = db.get('users').find({ userName: username }).value();
+    if (user) return true;
     return false;
   }
 
@@ -47,12 +52,11 @@ class userManager {
     const user = db.get('users').find({ userName: username }).value();
     let returnObj = {};
     // if login attempt while account is locked.
-    if(user.userLockTries >= user.lastLoginFail && (new Date() - new Date(user.lastLoginFailTime))/1000 <= this.userLockTimeSec) {
+    if (user.userLockTries >= user.lastLoginFail && (new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTimeSec) {
       // "reset" timer
       user.lastLoginFailTime = new Date().toISOString();
       returnObj.error = 'To many failed attempt, take a break';
-    }
-    else if (user && bcrypt.compareSync(password, user.password)) {
+    } else if (user && bcrypt.compareSync(password, user.password)) {
       returnObj = Object.assign({}, user);
       // Store last successful login, some day we might purge unused users.
       user.lastLoginTime = new Date().toISOString();
