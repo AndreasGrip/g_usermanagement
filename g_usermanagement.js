@@ -2,12 +2,7 @@ const bcrypt = require('bcryptjs');
 const bcryptSaltRounds = 24;
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
-const bcrypt = require('bcryptjs');
-const bcryptSaltRounds = 24;
-const low = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync');
 
-const adapter = new FileSync('userDb.json');
 const adapter = new FileSync('userDb.json');
 const db = low(adapter);
 
@@ -38,7 +33,6 @@ function isJSON(variable) {
 
 class userManager {
   constructor() {
-    this.userIdMax = db.get('userIdMax').value();
     this.userIdMax = db.get('userIdMax').value();
     this.usersLoggedIn = [];
     // How many tries before temporary lock the account.
@@ -86,14 +80,7 @@ class userManager {
 
   userLogin(username, password) {
     const user = db.get('users').find({ userName: username }).value();
-    const user = db.get('users').find({ userName: username }).value();
     let returnObj = {};
-    // if login attempt while account is locked.
-    if (user.userLockTries >= user.lastLoginFail && (new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTimeSec) {
-      // "reset" timer
-      user.lastLoginFailTime = new Date().toISOString();
-      returnObj.error = 'To many failed attempt, take a break';
-    } else if (user && bcrypt.compareSync(password, user.password)) {
     // if login attempt while account is locked.
     if (user.userLockTries >= user.lastLoginFail && (new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTimeSec) {
       // "reset" timer
@@ -105,15 +92,7 @@ class userManager {
       user.lastLoginTime = new Date().toISOString();
       db.write();
       returnObj.password = '******';
-      // Store last successful login, some day we might purge unused users.
-      user.lastLoginTime = new Date().toISOString();
-      db.write();
-      returnObj.password = '******';
     } else {
-      user.lastLoginFailTime = new Date().toISOString();
-      // if failed login within userLockTriesTime sec, add one to userLockTriesTime
-      if ((new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTriesTime) user.userLockTriesTime = user.lastLoginFail ? user.lastLoginFail++ : 1;
-      returnObj.error = 'Wrong user or password';
       user.lastLoginFailTime = new Date().toISOString();
       // if failed login within userLockTriesTime sec, add one to userLockTriesTime
       if ((new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTriesTime) user.userLockTriesTime = user.lastLoginFail ? user.lastLoginFail++ : 1;
@@ -130,8 +109,6 @@ class userManager {
     if (!userName) {
       returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
       returnObj.error += 'No username defined';
-      returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
-      returnObj.error += 'No username defined';
     }
     if (!password) {
       returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
@@ -141,18 +118,13 @@ class userManager {
     if (db.get('users').find({ userName: userName }).value()) {
       returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
       returnObj.error += 'Username already exist';
-    if (db.get('users').find({ userName: userName }).value()) {
-      returnObj.error = returnObj.error ? returnObj.error + ' and ' : '';
-      returnObj.error += 'Username already exist';
     }
     // If any errors found, return them.
     if (!returnObj.error) {
       const userId = this.userIdMax++;
       const passwordHashed = bcrypt.hashSync(password, bcryptSaltRounds);
-      const passwordHashed = bcrypt.hashSync(password, bcryptSaltRounds);
       const dataObj = data ? JSON.parse(data) : {};
       const settingsObj = data ? JSON.parse(c) : {};
-      db.set('userIdMax', this.userIdMax).write();
       db.set('userIdMax', this.userIdMax).write();
       const userObj = {
         userId: userId,
@@ -162,9 +134,7 @@ class userManager {
         settings: settingsObj,
       };
       db.get('users').push(userObj).write();
-      db.get('users').push(userObj).write();
       returnObj = Object.assign({}, userObj);
-      returnObj.password = '******';
       returnObj.password = '******';
     }
     return JSON.stringify(returnObj);
