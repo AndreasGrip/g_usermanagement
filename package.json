@@ -1,11 +1,11 @@
 {
   "name": "g_usermanagent",
-  "version": "0.3.2",
+  "version": "0.4.2",
   "description": "",
   "main": "g_usermanagement.js",
-  "repository" : {
-    "type" : "git",
-    "url" : "git://github.com/AndreasGrip/g_usermanagement.git"
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/AndreasGrip/g_usermanagement.git"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -18,7 +18,7 @@
   "author": "Andreas Grip",
   "license": "ISC",
   "dependencies": {
-    "bcrypt": "^5.0.0",
+    "bcryptjs": "^2.4.3",
     "lowdb": "^1.0.0"
   }
 }

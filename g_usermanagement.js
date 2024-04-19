@@ -1,5 +1,5 @@
-const bcrypt = require('bcrypt');
-const bcryptSaltRounds = 11;
+const bcrypt = require('bcryptjs');
+const bcryptSaltRounds = 24;
 const low = require('lowdb');
 const FileSync = require('lowdb/adapters/FileSync');
 
@@ -34,22 +34,52 @@ class userManager {
   constructor() {
     this.userIdMax = db.get('userIdMax').value();
     this.usersLoggedIn = [];
+    // How many tries before temporary lock the account.
+    this.userLockTries = 5;
+    // if wrong password attempted within this period counter towards lock get +1.
+    this.userLockTriesTime = 300;
+    // How long the user will be unable to login.
+    // Each attempt before this time will reset the timer. (Call me evil ;) )
+    // this is the suggested formula. You can change it but it's quite balanced.
+    this.userLockTimeSec = this.userLockTries * this.userLockTriesTime;
+  }
+
+  // return number of users in the database.
+  userCount() {
+    return db.get('users').__wrapped__.users.length;
+  }
+
+  // Check if a username exist
+  userCheck(username) {
+    const user = db.get('users').find({ userName: username }).value();
+    if (user) return true;
+    return false;
   }
 
   userLogin(username, password) {
     const user = db.get('users').find({ userName: username }).value();
     let returnObj = {};
-    if (user && bcrypt.compareSync(password, user.password)) {
+    // if login attempt while account is locked.
+    if (user.userLockTries >= user.lastLoginFail && (new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTimeSec) {
+      // "reset" timer
+      user.lastLoginFailTime = new Date().toISOString();
+      returnObj.error = 'To many failed attempt, take a break';
+    } else if (user && bcrypt.compareSync(password, user.password)) {
       returnObj = Object.assign({}, user);
-      //user.lastLogin = new Date().toISOString();
-      //db.write();
+      // Store last successful login, some day we might purge unused users.
+      user.lastLoginTime = new Date().toISOString();
+      db.write();
       returnObj.password = '******';
     } else {
+      user.lastLoginFailTime = new Date().toISOString();
+      // if failed login within userLockTriesTime sec, add one to userLockTriesTime
+      if ((new Date() - new Date(user.lastLoginFailTime)) / 1000 <= this.userLockTriesTime) user.userLockTriesTime = user.lastLoginFail ? user.lastLoginFail++ : 1;
       returnObj.error = 'Wrong user or password';
     }
     return JSON.stringify(returnObj);
     // someway to check if something returned.
   }
+
   // Add a new user
   userAdd(userName, password, data, settings) {
     let returnObj = {};
@@ -70,7 +100,7 @@ class userManager {
     // If any errors found, return them.
     if (!returnObj.error) {
       const userId = this.userIdMax++;
-      const passwordHashed = bcrypt.hashSync(password, 11);
+      const passwordHashed = bcrypt.hashSync(password, bcryptSaltRounds);
       const dataObj = data ? JSON.parse(data) : {};
       const settingsObj = data ? JSON.parse(c) : {};
       db.set('userIdMax', this.userIdMax).write();
@@ -91,11 +121,14 @@ class userManager {
   userDel(userName) {
     let returnObj = {};
     const timestamp = new Date().toJSON();
-    const user = db.get('users').find({ userName: userName }).set({ deleted: timestamp }).value();
-    if (user) {
-      returnObj = user;
-      returnObj.password = '******';
-      db.write();
+    const user = db.get('users').find({ userName: userName }).set({ deleted: timestamp }).value();;
+    if (user.length > 0) {
+      if ((user.length = 1)) {
+        returnObj = user[0];
+      } else {
+        returnObj = user;
+      }
+      user.password = '*****'
     } else {
       returnObj.error = 'No such user';
     }
@@ -104,10 +137,14 @@ class userManager {
   // Wipe user
   userWipe(userName) {
     let returnObj = {};
-    const user = db.get('users').remove({ userName: userName }).write();
-    if (user) {
+    const user = db.get('users').remove({ userName: userName }).write().value();
+    if (user.length > 0) {
+      if ((user.length = 1)) {
+        returnObj = user[0];
+      } else {
         returnObj = user;
-        returnObj.password = '******';
+      }
+      returnObj.password = '******';
     } else {
       returnObj.error = 'No such user';
     }
